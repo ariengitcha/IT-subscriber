@@ -73,6 +73,28 @@ def fetch_and_store_updates():
             body += f"Published: {update['published']}\n\n"
         
         send_email(subject, body)
+def fetch_and_store_updates():
+    new_updates = []
+    for feed_url in feeds:
+        # ... (rest of the function remains the same)
 
+    # Temporary: Always send an email for testing
+    if True:  # Change this line
+        subject = f"Security Update Check Run"
+        body = "The security update check script has run. This is a test email."
+        if new_updates:
+            body += "\n\nNew updates were found:\n\n"
+            for update in new_updates:
+                body += f"Title: {update['title']}\n"
+                body += f"Vendor: {update['vendor']}\n"
+                body += f"Link: {update['link']}\n"
+                body += f"Published: {update['published']}\n\n"
+        else:
+            body += "\n\nNo new updates were found."
+        
+        send_email(subject, body)
+
+if __name__ == "__main__":
+    fetch_and_store_updates()
 if __name__ == "__main__":
     fetch_and_store_updates()
