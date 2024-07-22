@@ -1,11 +1,15 @@
 import feedparser
 import pymongo
 from datetime import datetime
+import os
 
-# MongoDB connection (replace with your actual connection string)
-client = pymongo.MongoClient("mongodb://localhost:27017/")
+# MongoDB connection using environment variable
+mongo_uri = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/')
+client = pymongo.MongoClient(mongo_uri)
 db = client["security_updates"]
 collection = db["updates"]
+
+# Rest of the script remains the same...
 
 # List of RSS feeds to check
 feeds = [
