@@ -21,8 +21,8 @@ RECIPIENT_EMAIL = os.environ.get('RECIPIENT_EMAIL')
 
 # List of RSS feeds to check
 feeds = [
-    "https://www.microsoft.com/en-us/msrc/rss/security-advisories",
-    "https://www.cisco.com/warp/public/146/news_cisco/rss/Security_Advisory.xml",
+    "https://api.msrc.microsoft.com/update-guide/rss",
+    "https://sec.cloudapps.cisco.com/security/center/psirtrss20/CiscoSecurityAdvisory.xml",
     # Add more feeds as needed
 ]
 
