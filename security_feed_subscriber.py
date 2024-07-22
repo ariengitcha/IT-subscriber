@@ -1,5 +1,8 @@
 import feedparser
 import pymongo
+from pymongo.errors 
+import ConnectionFailure, ServerSelectionTimeoutError
+import ssl
 from datetime import datetime
 import os
 import smtplib
