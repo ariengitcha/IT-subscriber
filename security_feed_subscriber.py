@@ -1,32 +1,78 @@
-name: Security Update Check
+import feedparser
+import pymongo
+from datetime import datetime
+import os
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
-on:
-  schedule:
-    - cron: '0 */6 * * *'  # Runs every 6 hours
-  workflow_dispatch:  # Allows manual triggering
+# MongoDB connection using environment variable
+mongo_uri = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/')
+client = pymongo.MongoClient(mongo_uri)
+db = client["security_updates"]
+collection = db["updates"]
 
-jobs:
-  check-security-updates:
-    runs-on: ubuntu-latest
+# Email configuration
+SMTP_SERVER = "smtp.gmail.com"
+SMTP_PORT = 587
+SENDER_EMAIL = os.environ.get('SENDER_EMAIL')
+SENDER_PASSWORD = os.environ.get('SENDER_PASSWORD')
+RECIPIENT_EMAIL = os.environ.get('RECIPIENT_EMAIL')
 
-    steps:
-    - name: Check out repository
-      uses: actions/checkout@v2
+# List of RSS feeds to check
+feeds = [
+    "https://www.microsoft.com/en-us/msrc/rss/security-advisories",
+    "https://www.cisco.com/warp/public/146/news_cisco/rss/Security_Advisory.xml",
+    # Add more feeds as needed
+]
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.x'
+def send_email(subject, body):
+    message = MIMEMultipart()
+    message["From"] = SENDER_EMAIL
+    message["To"] = RECIPIENT_EMAIL
+    message["Subject"] = subject
+    message.attach(MIMEText(body, "plain"))
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+    with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+        server.starttls()
+        server.login(SENDER_EMAIL, SENDER_PASSWORD)
+        server.send_message(message)
 
-    - name: Run security feed subscriber
-      env:
-        MONGO_URI: ${{ secrets.MONGO_URI }}
-        SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
-        SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
-        RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
-      run: python security_feed_subscriber.py
+def fetch_and_store_updates():
+    new_updates = []
+    for feed_url in feeds:
+        feed = feedparser.parse(feed_url)
+        
+        for entry in feed.entries:
+            update = {
+                "title": entry.title,
+                "link": entry.link,
+                "summary": entry.summary,
+                "published": datetime.strptime(entry.published, "%a, %d %b %Y %H:%M:%S %z"),
+                "vendor": feed.feed.title,
+                "processed": False
+            }
+            
+            # Insert only if the update doesn't already exist
+            result = collection.update_one(
+                {"link": update["link"]},
+                {"$setOnInsert": update},
+                upsert=True
+            )
+            
+            if result.upserted_id:
+                new_updates.append(update)
+    
+    if new_updates:
+        subject = f"New Security Updates Found: {len(new_updates)}"
+        body = "The following new security updates have been found:\n\n"
+        for update in new_updates:
+            body += f"Title: {update['title']}\n"
+            body += f"Vendor: {update['vendor']}\n"
+            body += f"Link: {update['link']}\n"
+            body += f"Published: {update['published']}\n\n"
+        
+        send_email(subject, body)
+
+if __name__ == "__main__":
+    fetch_and_store_updates()
