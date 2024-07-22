@@ -1,43 +1,32 @@
-import feedparser
-import pymongo
-from datetime import datetime
-import os
+name: Security Update Check
 
-# MongoDB connection using environment variable
-mongo_uri = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/')
-client = pymongo.MongoClient(mongo_uri)
-db = client["security_updates"]
-collection = db["updates"]
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Runs every 6 hours
+  workflow_dispatch:  # Allows manual triggering
 
-# Rest of the script remains the same...
+jobs:
+  check-security-updates:
+    runs-on: ubuntu-latest
 
-# List of RSS feeds to check
-feeds = [
-    "https://www.microsoft.com/en-us/msrc/rss/security-advisories",
-    "https://www.cisco.com/warp/public/146/news_cisco/rss/Security_Advisory.xml",
-    # Add more feeds as needed
-]
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v2
 
-def fetch_and_store_updates():
-    for feed_url in feeds:
-        feed = feedparser.parse(feed_url)
-        
-        for entry in feed.entries:
-            update = {
-                "title": entry.title,
-                "link": entry.link,
-                "summary": entry.summary,
-                "published": datetime.strptime(entry.published, "%a, %d %b %Y %H:%M:%S %z"),
-                "vendor": feed.feed.title,
-                "processed": False
-            }
-            
-            # Insert only if the update doesn't already exist
-            collection.update_one(
-                {"link": update["link"]},
-                {"$setOnInsert": update},
-                upsert=True
-            )
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
 
-if __name__ == "__main__":
-    fetch_and_store_updates()
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run security feed subscriber
+      env:
+        MONGO_URI: ${{ secrets.MONGO_URI }}
+        SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+        SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
+        RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
+      run: python security_feed_subscriber.py
