@@ -1,13 +1,15 @@
 import feedparser
 import pymongo
-from pymongo.errors 
-import ConnectionFailure, ServerSelectionTimeoutError
-import ssl
+from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 from datetime import datetime
 import os
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import ssl
+import sys
+
+# Rest of your script continues here...
 
 # MongoDB connection using environment variable
 mongo_uri = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/')
