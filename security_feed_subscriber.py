@@ -11,10 +11,23 @@ from email.mime.multipart import MIMEMultipart
 
 # MongoDB connection using environment variable
 mongo_uri = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/')
-client = pymongo.MongoClient(mongo_uri)
-db = client["security_updates"]
-collection = db["updates"]
 
+try:
+    client = pymongo.MongoClient(mongo_uri, 
+                                 ssl=True, 
+                                 ssl_cert_reqs=ssl.CERT_NONE,
+                                 serverSelectionTimeoutMS=5000)
+    
+    # The ismaster command is cheap and does not require auth.
+    client.admin.command('ismaster')
+    
+    db = client["security_updates"]
+    collection = db["updates"]
+    print("MongoDB connection successful")
+except (ConnectionFailure, ServerSelectionTimeoutError) as e:
+    print(f"Could not connect to MongoDB: {e}")
+    # You might want to exit the script here or handle the error appropriately
+    sys.exit(1)
 # Email configuration
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
