@@ -63,23 +63,8 @@ def fetch_and_store_updates():
             if result.upserted_id:
                 new_updates.append(update)
     
-    if new_updates:
-        subject = f"New Security Updates Found: {len(new_updates)}"
-        body = "The following new security updates have been found:\n\n"
-        for update in new_updates:
-            body += f"Title: {update['title']}\n"
-            body += f"Vendor: {update['vendor']}\n"
-            body += f"Link: {update['link']}\n"
-            body += f"Published: {update['published']}\n\n"
-        
-        send_email(subject, body)
-def fetch_and_store_updates():
-    new_updates = []
-    for feed_url in feeds:
-        # ... (rest of the function remains the same)
-
-    # Temporary: Always send an email for testing
-    if True:  # Change this line
+    # Always send an email for testing
+    if True:  # Change this to 'if new_updates:' after testing
         subject = f"Security Update Check Run"
         body = "The security update check script has run. This is a test email."
         if new_updates:
@@ -94,7 +79,5 @@ def fetch_and_store_updates():
         
         send_email(subject, body)
 
-if __name__ == "__main__":
-    fetch_and_store_updates()
 if __name__ == "__main__":
     fetch_and_store_updates()
